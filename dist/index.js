@@ -16,6 +16,8 @@ class Server {
             password: "123456"
         };
         this.app = express_1.default();
+        this.app.use(express_1.default.urlencoded({ extended: true }));
+        this.app.use(express_1.default.json());
         this.router = new api_1.API(this.user).router;
         this.routes();
     }
@@ -23,8 +25,9 @@ class Server {
         this.app.get("/", (req, res) => {
             res.sendFile(path_1.default.join(__dirname + "/../template/index.react.html"));
         });
-        this.app.use("/2fa", this.router);
+        this.app.use("/twofactor", this.router);
         this.app.post("/login", (req, res) => {
+            console.log("BODY", req.body);
             /**
              * login needs to support both 2FA and normal login:
              * 1. check if the user has enabled 2FA
@@ -32,14 +35,14 @@ class Server {
              */
             if (!this.user.twofa || !this.user.twofa.secret) {
                 // normal login
-                if (this.authenticated(req.body.user)) {
+                if (this.authenticated(req.body)) {
                     return res.send("SUCCESS");
                 }
                 return res.status(400).send("invalid email or password");
             }
             else {
                 // 2FA enabled
-                if (!this.authenticated(req.body.user)) {
+                if (!this.authenticated(req.body)) {
                     return res.status(203).send("Invalid email or password");
                 }
                 const otp = req.headers["x-otp"];

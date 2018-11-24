@@ -30,16 +30,19 @@ class Server {
         }
 
         this.app = express();
+        this.app.use(express.urlencoded({ extended: true }));
+        this.app.use(express.json());
         this.router = new API(this.user).router;
         this.routes();
     }
 
     routes() {
         this.app.get("/", (req, res) => {
-            res.sendFile(path.join(__dirname + "/../template/index.react.html"))
+            res.sendFile(path.join(__dirname + "/../template/index.vue.html"))
         })
-        this.app.use("/2fa", this.router)
+        this.app.use("/twofactor", this.router)
         this.app.post("/login", (req, res) => {
+            console.log("BODY", req.body)
             /**
              * login needs to support both 2FA and normal login:
              * 1. check if the user has enabled 2FA
@@ -47,13 +50,13 @@ class Server {
              */
             if (!this.user.twofa || !this.user.twofa.secret) {
                 // normal login
-                if (this.authenticated(req.body.user)) {
+                if (this.authenticated(req.body)) {
                     return res.send("SUCCESS")
                 }
                 return res.status(400).send("invalid email or password")
             } else {
                 // 2FA enabled
-                if (!this.authenticated(req.body.user)) {
+                if (!this.authenticated(req.body)) {
                     return res.status(203).send("Invalid email or password")
                 }
                 const otp = req.headers["x-otp"]
